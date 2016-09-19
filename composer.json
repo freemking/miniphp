@@ -3,5 +3,13 @@
     "description": "A mini framework of php,only one file",
     "require": {
         "php": "^5.3.3 || ^7.0"
+    },
+    "autoload": {
+        "files": [
+            "src/Mini/Mini.php"
+        ],
+        "psr-4": {
+            "luca\\": "src/"
+        }
     }
 }
