@@ -5,6 +5,7 @@
  * Date: 16/8/6
  * Time: 16:39
  */
+namespace Mini;
 
 class Router{
     public function run(){
