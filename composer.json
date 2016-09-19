@@ -1,6 +1,6 @@
 {
-    "name": "luca/mimiphp",
-    "description": "A mimi framework of php",
+    "name": "luca/miniphp",
+    "description": "A mini framework of php",
     "require": {
         "php": "^5.3.3 || ^7.0"
     }
