@@ -8,6 +8,12 @@
 namespace Mini;
 
 class Router{
+    public $controller_path;
+
+    public function __construct(){
+        $this->controller_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/controllers';
+    }
+
     public function run(){
         $keys = array_keys($_GET);
         $uri = isset($keys[0])?$keys[0]:'index/index';
@@ -15,13 +21,14 @@ class Router{
         $_controller_name = $routes[0]?$routes[0]:'index';
         $_action_name = (isset($routes[1])&&$routes[1])?$routes[1]:'index';
 
-        if (file_exists(__DIR__ . '/controllers/' . $_controller_name . '.php')) {
-            require __DIR__ . '/controllers/' . $_controller_name . '.php';
+        $controller_file = $this->controller_path . '/' . $_controller_name . '.php';
+        if (file_exists($controller_file)) {
+            require $controller_file;
             $controllerClass = $_controller_name . 'Controller';
             $controller = new $controllerClass(['controllerName' => $_controller_name, 'actionName' => $_action_name]);
             $controller->{$_action_name . 'Action'}();
         } else {
-            throw new ErrorException('controller file ' . $_controller_name . ' is not exist');
+            throw new \ErrorException('controller file ' . $controller_file . ' is not exist');
         }
     }
 }
@@ -38,12 +45,12 @@ class Controller
 
     public function view()
     {
-        return Singleton::getClassInstance('View', $this->data);
+        return Singleton::getViewInstance('View', $this->data);
     }
 
     public function display(...$_display_name)
     {
-        return Singleton::getClassInstance('View', $this->data)->display(...$_display_name);
+        return Singleton::getViewInstance('View', $this->data)->display(...$_display_name);
     }
 
     public function getControllerName()
@@ -68,9 +75,11 @@ class View
     public $data = array();
     public $controller_name;
     public $action_name;
+    public $views_path;
 
     public function __construct($params)
     {
+        $this->views_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/views';
         $this->controller_name = $params['controllerName'];
         $this->action_name = $params['actionName'];
     }
@@ -83,11 +92,12 @@ class View
     public function display(...$_display_name)
     {
         $_view_name = $_display_name ? $_display_name[0] : $this->action_name;
-        if (file_exists(__DIR__ . '/views/' . $this->controller_name . '/' . $_view_name . '.php')) {
+        $_view_file = $this->views_path . '/' . $this->controller_name . '/' . $_view_name . '.php';
+        if (file_exists($_view_file)) {
             extract($this->data);
-            include __DIR__ . '/views/' . $this->controller_name . '/' . $_view_name . '.php';
+            include $_view_file;
         } else {
-            throw new ErrorException('view file ' . $_view_name . '.php is not exist');
+            throw new \ErrorException('view file ' . $_view_file . ' is not exist');
         }
     }
 }
@@ -99,10 +109,10 @@ class Singleton
     private static $_model_instances = array();
     private static $_db_instances = array();
 
-    public static function getClassInstance($class_name, $params = array())
+    public static function getViewInstance($class_name, $params = array())
     {
         if (!isset(self::$_class_instances[$class_name])) {
-            self::$_class_instances[$class_name] = new $class_name($params);
+            self::$_class_instances[$class_name] = new View($params);
         }
         return self::$_class_instances[$class_name];
     }
@@ -134,16 +144,18 @@ Class Model
 
     public function __construct($model_name)
     {
+        $this->model_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models';
         $this->model_name = $model_name;
     }
 
     public function db()
     {
-        if (file_exists(__DIR__ . '/models/db/' . $this->model_name . '.php')){
-            require __DIR__ . '/models/db/' . $this->model_name . '.php';
+        $db_file = $this->model_path . '/db/' . $this->model_name . '.php';
+        if (file_exists($db_file)){
+            require $db_file;
             return Singleton::getDBInstance($this->model_name);
         }else{
-            throw new ErrorException('db file '.$this->model_name.' is not exist');
+            throw new ErrorException('db file '. $db_file . ' is not exist');
         }
     }
 
@@ -159,46 +171,57 @@ class DB
 {
     private static $instances = array();
 
+    public function __construct()
+    {
+        $this->config_file = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/config/config.php';
+    }
+
     public function dbReader($db_key = 'default')
     {
-        include __DIR__ . '/../config/config.php';
-        $db_config = db_config();
-        $config_db = $db_config[$db_key];
-        $key = md5($config_db['host']);
-        if (!isset(self::$instances[$key])) {
-            try {
-                $db = new PDO($config_db['host'], $config_db['user'], $config_db['password']);
-                $db->exec("SET NAMES utf8mb4");
-            } catch (PDOException $e) {
-                echo "数据库迷路了^_^";
-                exit;
+        if(file_exists($this->config_file)) {
+            include $this->config_file;
+            $db_config = db_config();
+            $config_db = $db_config[$db_key];
+            $key = md5($config_db['host']);
+            if (!isset(self::$instances[$key])) {
+                try {
+                    $db = new \PDO($config_db['host'], $config_db['user'], $config_db['password']);
+                    $db->exec("SET NAMES utf8mb4");
+                } catch (PDOException $e) {
+                    echo "数据库迷路了^_^";
+                    exit;
+                }
+                $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+                self::$instances[$key] = $db;
             }
-            $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            self::$instances[$key] = $db;
+            return self::$instances[$key];
+        }else{
+            throw new ErrorException('config file '.$this->config_file . ' is not exist');
         }
-        return self::$instances[$key];
     }
 
     public function fetch($sql,$params){
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function fetchAll($sql,$params){
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }
+
+
 
 function M($name)
 {
-    if (file_exists(__DIR__ . '/models/' . $name . '.php')) {
-        include_once __DIR__ . '/models/' . $name . '.php';
+    $model_file = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models/' . $name . '.php';
+    if (file_exists($model_file)) {
+        include_once $model_file;
         return Singleton::getModelInstance($name);
     } else {
-        throw new ErrorException('model file' . $name . ' is not exist');
+        throw new ErrorException('model file' . $model_file . ' is not exist');
     }
 }
-
