@@ -15,8 +15,11 @@ class Router{
     }
 
     public function run(){
-        $keys = array_keys($_GET);
-        $uri = isset($keys[0])?$keys[0]:'index/index';
+        $uri = parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
+        $uri = substr($uri,1);
+        if($uri == ''){
+            $uri = 'index/index';
+        }
         $routes = explode('/', $uri);
         $_controller_name = $routes[0]?$routes[0]:'index';
         $_action_name = (isset($routes[1])&&$routes[1])?$routes[1]:'index';
