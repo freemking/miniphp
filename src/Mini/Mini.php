@@ -7,10 +7,16 @@
  */
 namespace Mini;
 
-class Router{
+class App{
     public $controller_path;
+    public static $config = [];
 
-    public function __construct(){
+    public function __construct($config_path,$env){
+        if(!file_exists($config_path)) {
+            throw new ErrorException('config file '.$config_path . ' is not exist');
+        }
+        $config = parse_ini_file($config_path,true);
+        self::$config = $config[$env];
         $this->controller_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/controllers';
     }
 
@@ -172,35 +178,30 @@ Class Model
 
 class DB
 {
-    private static $instances = array();
+    private static $instances = [];
 
     public function __construct()
     {
-        $this->config_file = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/config/config.php';
+
     }
 
-    public function dbReader($db_key = 'default')
+    public function dbReader($db_key = 'db')
     {
-        if(file_exists($this->config_file)) {
-            include $this->config_file;
-            $db_config = db_config();
-            $config_db = $db_config[$db_key];
-            $key = md5($config_db['host']);
-            if (!isset(self::$instances[$key])) {
-                try {
-                    $db = new \PDO($config_db['host'], $config_db['user'], $config_db['password']);
-                    $db->exec("SET NAMES utf8mb4");
-                } catch (PDOException $e) {
-                    echo "数据库迷路了^_^";
-                    exit;
-                }
-                $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-                self::$instances[$key] = $db;
+        $config = App::$config;
+        $key = md5($config[$db_key.'.host']);
+        if (!isset(self::$instances[$key])) {
+            try {
+                $db = new \PDO($config[$db_key.'.host'], $config[$db_key.'.user'], $config[$db_key.'.password']);
+                $db->exec("SET NAMES utf8mb4");
+            } catch (PDOException $e) {
+                echo "数据库迷路了^_^";
+                exit;
             }
-            return self::$instances[$key];
-        }else{
-            throw new ErrorException('config file '.$this->config_file . ' is not exist');
+            $db->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            self::$instances[$key] = $db;
         }
+        return self::$instances[$key];
+
     }
 
     public function fetch($sql,$params){
@@ -215,7 +216,6 @@ class DB
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }
-
 
 
 function M($name)
