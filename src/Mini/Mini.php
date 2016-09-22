@@ -57,9 +57,9 @@ class Controller
         return Singleton::getViewInstance('View', $this->data);
     }
 
-    public function display(...$_display_name)
+    public function display($_display_name = '')
     {
-        return Singleton::getViewInstance('View', $this->data)->display(...$_display_name);
+        return Singleton::getViewInstance('View', $this->data)->display($_display_name);
     }
 
     public function getControllerName()
@@ -98,9 +98,9 @@ class View
         $this->data[$name] = $value;
     }
 
-    public function display(...$_display_name)
+    public function display($_display_name)
     {
-        $_view_name = $_display_name ? $_display_name[0] : $this->action_name;
+        $_view_name = $_display_name ? $_display_name : $this->action_name;
         $_view_file = $this->views_path . '/' . $this->controller_name . '/' . $_view_name . '.php';
         if (file_exists($_view_file)) {
             extract($this->data);
@@ -149,29 +149,36 @@ class Singleton
 Class Model
 {
 
-    private $model_name = '';
+    private static $model_name = '';
+    private static $model_path = '';
 
-    public function __construct($model_name)
-    {
-        $this->model_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models';
-        $this->model_name = $model_name;
+    public static function getInstance($model_name){
+        self::$model_name = $model_name;
+        self::$model_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models';
+        $model_file = self::$model_path.'/' . $model_name . '.php';
+        if (file_exists($model_file)) {
+            include_once $model_file;
+            return Singleton::getModelInstance($model_name);
+        } else {
+            throw new \ErrorException('model file' . $model_file . ' is not exist');
+        }
     }
 
     public function db()
     {
-        $db_file = $this->model_path . '/db/' . $this->model_name . '.php';
+        $db_file = self::$model_path . '/db/' . self::$model_name . '.php';
         if (file_exists($db_file)){
             require $db_file;
-            return Singleton::getDBInstance($this->model_name);
+            return Singleton::getDBInstance(self::$model_name);
         }else{
-            throw new ErrorException('db file '. $db_file . ' is not exist');
+            throw new \ErrorException('db file '. $db_file . ' is not exist');
         }
     }
 
     //重载__clone方法，不允许对象实例被克隆
     public function __clone()
     {
-        throw new Exception("Singleton Class Can Not Be Cloned");
+        throw new \ErrorException("Singleton Class Can Not Be Cloned");
     }
 }
 
@@ -179,11 +186,6 @@ Class Model
 class DB
 {
     private static $instances = [];
-
-    public function __construct()
-    {
-
-    }
 
     public function dbReader($db_key = 'db')
     {
@@ -214,17 +216,5 @@ class DB
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
-    }
-}
-
-
-function M($name)
-{
-    $model_file = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models/' . $name . '.php';
-    if (file_exists($model_file)) {
-        include_once $model_file;
-        return Singleton::getModelInstance($name);
-    } else {
-        throw new ErrorException('model file' . $model_file . ' is not exist');
     }
 }
