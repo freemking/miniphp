@@ -117,6 +117,8 @@ class Singleton
     private static $_class_instances = array();
     private static $_model_instances = array();
     private static $_db_instances = array();
+    private static $_redis_instances = array();
+    private static $model_path = '';
 
     public static function getViewInstance($class_name, $params = array())
     {
@@ -129,6 +131,13 @@ class Singleton
     public static function getModelInstance($model_name)
     {
         if (!isset(self::$_model_instances[$model_name])) {
+            self::$model_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models';
+            $model_file = self::$model_path.'/' . $model_name . '.php';
+            if (file_exists($model_file)) {
+                require_once $model_file;
+            }else {
+                throw new \ErrorException('model file' . $model_file . ' is not exist');
+            }
             $model = $model_name . 'Model';
             self::$_model_instances[$model_name] = new $model($model_name);
         }
@@ -138,10 +147,31 @@ class Singleton
     public static function getDBInstance($db_name)
     {
         if (!isset(self::$_db_instances[$db_name])) {
+            $db_file = self::$model_path . '/db/' . $db_name . '.php';
+            if (file_exists($db_file)){
+                require_once $db_file;
+            }else{
+                throw new \ErrorException('db file '. $db_file . ' is not exist');
+            }
             $db = $db_name . 'DB';
             self::$_db_instances[$db_name] = new $db();
         }
         return self::$_db_instances[$db_name];
+    }
+
+    public static function getRedisInstance($redis_name)
+    {
+        if (!isset(self::$_redis_instances[$redis_name])) {
+            $redis_file = self::$model_path . '/redis/' . $redis_name . '.php';
+            if (file_exists($redis_file)){
+                require_once $redis_file;
+            }else{
+                throw new \ErrorException('redis file '. $redis_file . ' is not exist');
+            }
+            $redis = $redis_name . 'Redis';
+            self::$_redis_instances[$redis_name] = new $redis();
+        }
+        return self::$_redis_instances[$redis_name];
     }
 }
 
@@ -150,29 +180,20 @@ Class Model
 {
 
     private static $model_name = '';
-    private static $model_path = '';
 
     public static function getInstance($model_name){
         self::$model_name = $model_name;
-        self::$model_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models';
-        $model_file = self::$model_path.'/' . $model_name . '.php';
-        if (file_exists($model_file)) {
-            include_once $model_file;
-            return Singleton::getModelInstance($model_name);
-        } else {
-            throw new \ErrorException('model file' . $model_file . ' is not exist');
-        }
+        return Singleton::getModelInstance($model_name);
     }
 
     public function db()
     {
-        $db_file = self::$model_path . '/db/' . self::$model_name . '.php';
-        if (file_exists($db_file)){
-            require $db_file;
-            return Singleton::getDBInstance(self::$model_name);
-        }else{
-            throw new \ErrorException('db file '. $db_file . ' is not exist');
-        }
+        return Singleton::getDBInstance(self::$model_name);
+    }
+
+    public function redis()
+    {
+        return Singleton::getRedisInstance(self::$model_name);
     }
 
     //重载__clone方法，不允许对象实例被克隆
@@ -186,14 +207,15 @@ Class Model
 class DB
 {
     private static $instances = [];
+    public $db_key = 'db';
 
-    public function dbReader($db_key = 'db')
+    public function dbReader()
     {
         $config = App::$config;
-        $key = md5($config[$db_key.'.host']);
+        $key = md5($config[$this->db_key.'.host']);
         if (!isset(self::$instances[$key])) {
             try {
-                $db = new \PDO($config[$db_key.'.host'], $config[$db_key.'.user'], $config[$db_key.'.password']);
+                $db = new \PDO($config[$this->db_key.'.host'], $config[$this->db_key.'.user'], $config[$this->db_key.'.password']);
                 $db->exec("SET NAMES utf8mb4");
             } catch (PDOException $e) {
                 echo "数据库迷路了^_^";
@@ -217,4 +239,44 @@ class DB
         $stmt->execute($params);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
+
+    public function update($sql,$params){
+        $stmt = $this->dbReader()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->rowCount();
+    }
+
+    public function insert($sql,$params){
+        $stmt = $this->dbReader()->prepare($sql);
+        $stmt->execute($params);
+        return $this->dbReader()->lastInsertId();
+    }
+
+}
+
+
+class Redis
+{
+    private static $instances = array();
+    public $redis_key = 'redis';
+
+    //类唯一实例的全局访问点
+    public function redisReader()
+    {
+        $config = App::$config;
+        $key = md5($config[$this->redis_key.'.host']);
+        if (!isset(self::$instances[$key])) {
+            $redis = new \Redis();
+            $redis->connect($config[$this->redis_key.'.host'], $config[$this->redis_key.'.port'], 2);
+            self::$instances[$key] = $redis;
+        }
+        return self::$instances[$key];
+    }
+
+    //重载__clone方法，不允许对象实例被克隆
+    public function __clone()
+    {
+        throw new Exception("Singleton Class Can Not Be Cloned");
+    }
+
 }
