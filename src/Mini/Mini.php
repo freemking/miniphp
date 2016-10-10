@@ -63,9 +63,12 @@ class Controller
     }
 
     public function redirect($url){
-        ob_start();
         header("Location: ".$url);
-        ob_end_flush();
+        exit;
+    }
+
+    public function echoJson($code,$message,$data=[]){
+        echo json_encode(['code'=>$code,'message'=>$message,'data'=>$data]);
         exit;
     }
 
