@@ -62,6 +62,11 @@ class Controller
         return Singleton::getViewInstance('View', $this->data)->display($_display_name);
     }
 
+    public function redirect($url){
+        header("Location: ".$url);
+        exit;
+    }
+
     public function getControllerName()
     {
         return $this->data['controllerName'];
