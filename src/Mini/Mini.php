@@ -28,8 +28,15 @@ class App{
         }
         $routes = explode('/', $uri);
         $_controller_name = $routes[0]?$routes[0]:'index';
+        if(strpos($_controller_name,'.') !== false){
+            header("HTTP/1.1 404 Not Found");
+            exit;
+        }
         $_action_name = (isset($routes[1])&&$routes[1])?$routes[1]:'index';
-
+        if(strpos($_action_name,'.') !== false){
+            header("HTTP/1.1 404 Not Found");
+            exit;
+        }
         $controller_file = $this->controller_path . '/' . $_controller_name . '.php';
         if (file_exists($controller_file)) {
             require $controller_file;
