@@ -38,7 +38,6 @@ class App{
         $controller_file = $this->controller_path . '/' . $_controller_name . '.php';
         if (file_exists($controller_file)) {
             require $controller_file;
-            $_controller_name = ucfirst($_controller_name);
             $controllerClass = $_controller_name . 'Controller';
             $controller = new $controllerClass(['controllerName' => $_controller_name, 'actionName' => $_action_name]);
             $controller->{$_action_name . 'Action'}();
