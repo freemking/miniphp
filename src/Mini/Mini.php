@@ -13,7 +13,7 @@ class App{
 
     public function __construct($config_path,$env){
         if(!file_exists($config_path)) {
-            throw new ErrorException('config file '.$config_path . ' is not exist');
+            throw new \ErrorException('config file '.$config_path . ' is not exist');
         }
         $config = parse_ini_file($config_path,true);
         self::$config = $config[$env];
@@ -28,16 +28,19 @@ class App{
             header("HTTP/1.1 404 Not Found");
             exit;
         }
-        
+
         if($uri == ''){
             $uri = 'index/index';
         }
         $routes = explode('/', $uri);
         $_controller_name = $routes[0]?$routes[0]:'index';
         $_action_name = (isset($routes[1])&&$routes[1])?$routes[1]:'index';
+
+        $_controller_name = strtolower($_controller_name);
         $controller_file = $this->controller_path . '/' . $_controller_name . '.php';
         if (file_exists($controller_file)) {
             require $controller_file;
+            $_controller_name = ucfirst($_controller_name);
             $controllerClass = $_controller_name . 'Controller';
             $controller = new $controllerClass(['controllerName' => $_controller_name, 'actionName' => $_action_name]);
             $controller->{$_action_name . 'Action'}();
@@ -90,7 +93,7 @@ class Controller
     public function __call($name, $arguments)
     {
         // TODO: Implement __call() method.
-        throw new ErrorException($name . ' is not defined');
+        throw new \ErrorException($name . ' is not defined');
     }
 }
 
@@ -168,6 +171,7 @@ class Singleton
             }else{
                 throw new \ErrorException('db file '. $db_file . ' is not exist');
             }
+            $db_name = ucfirst($db_name);
             $db = $db_name . 'DB';
             self::$_db_instances[$db_name] = new $db();
         }
@@ -183,6 +187,7 @@ class Singleton
             }else{
                 throw new \ErrorException('redis file '. $redis_file . ' is not exist');
             }
+            $redis_name = ucfirst($redis_name);
             $redis = $redis_name . 'Redis';
             self::$_redis_instances[$redis_name] = new $redis();
         }
@@ -291,7 +296,7 @@ class Redis
     //重载__clone方法，不允许对象实例被克隆
     public function __clone()
     {
-        throw new Exception("Singleton Class Can Not Be Cloned");
+        throw new \Exception("Singleton Class Can Not Be Cloned");
     }
 
 }
