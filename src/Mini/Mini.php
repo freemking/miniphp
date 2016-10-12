@@ -23,22 +23,17 @@ class App{
     public function run(){
         $uri = parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
         $uri = substr($uri,1);
-
-        if(strpos($uri,'.') !== false){
-            header("HTTP/1.1 404 Not Found");
-            exit;
-        }
-
         if($uri == ''){
             $uri = 'index/index';
         }
         $routes = explode('/', $uri);
         $_controller_name = $routes[0]?$routes[0]:'index';
         $_action_name = (isset($routes[1])&&$routes[1])?$routes[1]:'index';
+
         $controller_file = $this->controller_path . '/' . $_controller_name . '.php';
         if (file_exists($controller_file)) {
             require $controller_file;
-            $controllerClass = $_controller_name . 'Controller';
+            $controllerClass = ucfirst($_controller_name . 'Controller');
             $controller = new $controllerClass(['controllerName' => $_controller_name, 'actionName' => $_action_name]);
             $controller->{$_action_name . 'Action'}();
         } else {
@@ -65,16 +60,6 @@ class Controller
     public function display($_display_name = '')
     {
         return Singleton::getViewInstance('View', $this->data)->display($_display_name);
-    }
-
-    public function redirect($url){
-        header("Location: ".$url);
-        exit;
-    }
-
-    public function echoJson($code,$message,$data=[]){
-        echo json_encode(['code'=>$code,'message'=>$message,'data'=>$data]);
-        exit;
     }
 
     public function getControllerName()
@@ -153,7 +138,7 @@ class Singleton
             }else {
                 throw new \ErrorException('model file' . $model_file . ' is not exist');
             }
-            $model = $model_name . 'Model';
+            $model = ucfirst($model_name . 'Model');
             self::$_model_instances[$model_name] = new $model($model_name);
         }
         return self::$_model_instances[$model_name];
@@ -168,8 +153,7 @@ class Singleton
             }else{
                 throw new \ErrorException('db file '. $db_file . ' is not exist');
             }
-            $db_name = ucfirst($db_name);
-            $db = $db_name . 'DB';
+            $db = ucfirst($db_name . 'DB');
             self::$_db_instances[$db_name] = new $db();
         }
         return self::$_db_instances[$db_name];
@@ -184,8 +168,7 @@ class Singleton
             }else{
                 throw new \ErrorException('redis file '. $redis_file . ' is not exist');
             }
-            $redis_name = ucfirst($redis_name);
-            $redis = $redis_name . 'Redis';
+            $redis = ucfirst($redis_name . 'Redis');
             self::$_redis_instances[$redis_name] = new $redis();
         }
         return self::$_redis_instances[$redis_name];
@@ -289,6 +272,7 @@ class Redis
         }
         return self::$instances[$key];
     }
+
 
     //重载__clone方法，不允许对象实例被克隆
     public function __clone()
