@@ -35,8 +35,6 @@ class App{
         $routes = explode('/', $uri);
         $_controller_name = $routes[0]?$routes[0]:'index';
         $_action_name = (isset($routes[1])&&$routes[1])?$routes[1]:'index';
-
-        $_controller_name = strtolower($_controller_name);
         $controller_file = $this->controller_path . '/' . $_controller_name . '.php';
         if (file_exists($controller_file)) {
             require $controller_file;
