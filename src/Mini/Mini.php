@@ -7,28 +7,31 @@
  */
 namespace Mini;
 
-class App{
+class App
+{
     public $controller_path;
     public static $config = [];
 
-    public function __construct($config_path,$env){
-        if(!file_exists($config_path)) {
-            throw new \ErrorException('config file '.$config_path . ' is not exist');
+    public function __construct($config_path, $env)
+    {
+        if (!file_exists($config_path)) {
+            throw new \ErrorException('config file ' . $config_path . ' is not exist');
         }
-        $config = parse_ini_file($config_path,true);
+        $config = parse_ini_file($config_path, true);
         self::$config = $config[$env];
-        $this->controller_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/controllers';
+        $this->controller_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))) . '/app/controllers';
     }
 
-    public function run(){
-        $uri = parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH);
-        $uri = substr($uri,1);
-        if($uri == ''){
+    public function run()
+    {
+        $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        $uri = substr($uri, 1);
+        if ($uri == '') {
             $uri = 'index/index';
         }
         $routes = explode('/', $uri);
-        $_controller_name = $routes[0]?$routes[0]:'index';
-        $_action_name = (isset($routes[1])&&$routes[1])?$routes[1]:'index';
+        $_controller_name = $routes[0] ? $routes[0] : 'index';
+        $_action_name = (isset($routes[1]) && $routes[1]) ? $routes[1] : 'index';
 
         $controller_file = $this->controller_path . '/' . $_controller_name . '.php';
         if (file_exists($controller_file)) {
@@ -62,8 +65,15 @@ class Controller
         return Singleton::getViewInstance('View', $this->data)->display($_display_name);
     }
 
-    public function redirect($url){
-        header('Location :'.$url);
+    public function redirect($url)
+    {
+        header('Location :' . $url);
+        exit;
+    }
+
+    public function echoJson($data, $code, $message)
+    {
+        echo json_encode(['data' => $data, 'code' => $code, 'message' => $message]);
         exit;
     }
 
@@ -93,7 +103,7 @@ class View
 
     public function __construct($params)
     {
-        $this->views_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/views';
+        $this->views_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))) . '/app/views';
         $this->controller_name = $params['controllerName'];
         $this->action_name = $params['actionName'];
     }
@@ -136,11 +146,11 @@ class Singleton
     public static function getModelInstance($model_name)
     {
         if (!isset(self::$_model_instances[$model_name])) {
-            self::$model_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))).'/app/models';
-            $model_file = self::$model_path.'/' . $model_name . '.php';
+            self::$model_path = dirname(dirname(dirname(dirname(dirname(dirname(__FILE__)))))) . '/app/models';
+            $model_file = self::$model_path . '/' . $model_name . '.php';
             if (file_exists($model_file)) {
                 require_once $model_file;
-            }else {
+            } else {
                 throw new \ErrorException('model file' . $model_file . ' is not exist');
             }
             $model = ucfirst($model_name . 'Model');
@@ -153,10 +163,10 @@ class Singleton
     {
         if (!isset(self::$_db_instances[$db_name])) {
             $db_file = self::$model_path . '/db/' . $db_name . '.php';
-            if (file_exists($db_file)){
+            if (file_exists($db_file)) {
                 require_once $db_file;
-            }else{
-                throw new \ErrorException('db file '. $db_file . ' is not exist');
+            } else {
+                throw new \ErrorException('db file ' . $db_file . ' is not exist');
             }
             $db = ucfirst($db_name . 'DB');
             self::$_db_instances[$db_name] = new $db();
@@ -168,10 +178,10 @@ class Singleton
     {
         if (!isset(self::$_redis_instances[$redis_name])) {
             $redis_file = self::$model_path . '/redis/' . $redis_name . '.php';
-            if (file_exists($redis_file)){
+            if (file_exists($redis_file)) {
                 require_once $redis_file;
-            }else{
-                throw new \ErrorException('redis file '. $redis_file . ' is not exist');
+            } else {
+                throw new \ErrorException('redis file ' . $redis_file . ' is not exist');
             }
             $redis = ucfirst($redis_name . 'Redis');
             self::$_redis_instances[$redis_name] = new $redis();
@@ -186,7 +196,8 @@ Class Model
 
     private static $model_name = '';
 
-    public static function getInstance($model_name){
+    public static function getInstance($model_name)
+    {
         self::$model_name = $model_name;
         return Singleton::getModelInstance($model_name);
     }
@@ -217,10 +228,10 @@ class DB
     public function dbReader()
     {
         $config = App::$config;
-        $key = md5($config[$this->db_key.'.host']);
+        $key = md5($config[$this->db_key . '.host']);
         if (!isset(self::$instances[$key])) {
             try {
-                $db = new \PDO($config[$this->db_key.'.host'], $config[$this->db_key.'.user'], $config[$this->db_key.'.password']);
+                $db = new \PDO($config[$this->db_key . '.host'], $config[$this->db_key . '.user'], $config[$this->db_key . '.password']);
                 $db->exec("SET NAMES utf8mb4");
             } catch (PDOException $e) {
                 echo "数据库迷路了^_^";
@@ -233,25 +244,29 @@ class DB
 
     }
 
-    public function fetch($sql,$params){
+    public function fetch($sql, $params)
+    {
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function fetchAll($sql,$params){
+    public function fetchAll($sql, $params)
+    {
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function update($sql,$params){
+    public function update($sql, $params)
+    {
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
         return $stmt->rowCount();
     }
 
-    public function insert($sql,$params){
+    public function insert($sql, $params)
+    {
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
         return $this->dbReader()->lastInsertId();
@@ -269,10 +284,10 @@ class Redis
     public function redisReader()
     {
         $config = App::$config;
-        $key = md5($config[$this->redis_key.'.host']);
+        $key = md5($config[$this->redis_key . '.host']);
         if (!isset(self::$instances[$key])) {
             $redis = new \Redis();
-            $redis->connect($config[$this->redis_key.'.host'], $config[$this->redis_key.'.port'], 2);
+            $redis->connect($config[$this->redis_key . '.host'], $config[$this->redis_key . '.port'], 2);
             self::$instances[$key] = $redis;
         }
         return self::$instances[$key];
