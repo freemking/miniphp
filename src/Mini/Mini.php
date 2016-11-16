@@ -309,9 +309,12 @@ class Config
         return App::$config;
     }
 
-    public static function getOne($name=''){
+    public static function getOne($name){
+        if(!$name){
+            throw new \Exception("config name can't be null");
+        }
         if(!isset(App::$config[$name])){
-            throw new \Exception("config ".$name." is not existed");
+            throw new \Exception("config name:".$name." is not existed");
         }
         return App::$config[$name];
     }
