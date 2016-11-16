@@ -301,3 +301,18 @@ class Redis
     }
 
 }
+
+class Config
+{
+    public static function getAll()
+    {
+        return App::$config;
+    }
+
+    public static function getOne($name=''){
+        if(!isset(App::$config[$name])){
+            throw new \Exception("config ".$name." is not existed");
+        }
+        return App::$config[$name];
+    }
+}
