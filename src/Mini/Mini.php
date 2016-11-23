@@ -225,13 +225,13 @@ class DB
     private static $instances = [];
     public $db_key = 'db';
 
-    public function dbReader()
+    public final function dbReader()
     {
         $config = App::$config;
         $key = md5($config[$this->db_key . '.host']);
         if (!isset(self::$instances[$key])) {
             try {
-                $db = new \PDO($config[$this->db_key . '.host'], $config[$this->db_key . '.user'], $config[$this->db_key . '.password']);
+                $db = new \PDO('mysql:host='.$config[$this->db_key . '.host'].';dbname='.$config[$this->db_key . '.database'], $config[$this->db_key . '.user'], $config[$this->db_key . '.password']);
                 $db->exec("SET NAMES utf8mb4");
             } catch (PDOException $e) {
                 echo "数据库迷路了^_^";
@@ -241,24 +241,23 @@ class DB
             self::$instances[$key] = $db;
         }
         return self::$instances[$key];
-
     }
 
-    public function fetch($sql, $params)
+    public final function fetch($sql, $params)
     {
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
-    public function fetchAll($sql, $params)
+    public final function fetchAll($sql, $params)
     {
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
-    public function update($sql, $params)
+    public final function update($sql, $params)
     {
         $stmt = $this->dbReader()->prepare($sql);
         $stmt->execute($params);
