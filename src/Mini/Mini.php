@@ -194,22 +194,22 @@ class Singleton
 Class Model
 {
 
-    private static $model_name = '';
 
     public static function getInstance($model_name)
     {
-        self::$model_name = $model_name;
         return Singleton::getModelInstance($model_name);
     }
 
     public function db()
     {
-        return Singleton::getDBInstance(self::$model_name);
+        $model_name = get_class($this);
+        return Singleton::getDBInstance($model_name);
     }
 
     public function redis()
     {
-        return Singleton::getRedisInstance(self::$model_name);
+        $model_name = get_class($this);
+        return Singleton::getRedisInstance($model_name);
     }
 
     //重载__clone方法，不允许对象实例被克隆
