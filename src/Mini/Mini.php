@@ -202,13 +202,13 @@ Class Model
 
     public function db()
     {
-        $model_name = get_class($this);
+        $model_name = str_replace('Model','',get_class($this));
         return Singleton::getDBInstance($model_name);
     }
 
     public function redis()
     {
-        $model_name = get_class($this);
+        $model_name = str_replace('Model','',get_class($this));
         return Singleton::getRedisInstance($model_name);
     }
 
