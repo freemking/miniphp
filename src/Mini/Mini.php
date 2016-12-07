@@ -153,7 +153,7 @@ class Singleton
             } else {
                 throw new \ErrorException('model file' . $model_file . ' is not exist');
             }
-            $model = ucfirst($model_name . 'Model');
+            $model = $model_name . 'Model';
             self::$_model_instances[$model_name] = new $model($model_name);
         }
         return self::$_model_instances[$model_name];
@@ -168,7 +168,7 @@ class Singleton
             } else {
                 throw new \ErrorException('db file ' . $db_file . ' is not exist');
             }
-            $db = ucfirst($db_name . 'DB');
+            $db = $db_name . 'DB';
             self::$_db_instances[$db_name] = new $db();
         }
         return self::$_db_instances[$db_name];
@@ -183,7 +183,7 @@ class Singleton
             } else {
                 throw new \ErrorException('redis file ' . $redis_file . ' is not exist');
             }
-            $redis = ucfirst($redis_name . 'Redis');
+            $redis = $redis_name . 'Redis';
             self::$_redis_instances[$redis_name] = new $redis();
         }
         return self::$_redis_instances[$redis_name];
